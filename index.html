@@ -644,9 +644,21 @@ body {
 <div id="toast" class="toast hidden"></div>
 
 <script>
-const APP_VERSION = "v23";
+const APP_VERSION = "v24";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
+
+const SLACK_WEBHOOK_KEY = "SORT_ZONE_SLACK_WEBHOOK_URL";
+
+/*
+  TEMP DCE1 hardcoded webhook.
+  Paste your Slack webhook URL below.
+
+  Warning: If your GitHub repo is public, anyone can see this.
+  Later, rotate/revoke it from Slack and use a safer backend/proxy.
+*/
+const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "PASTE_YOUR_SLACK_WEBHOOK_URL_HERE";
+
 const CLUSTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const ALL_SLOTS = ["A","B","C","D","E","F","G","H","J","K","L","M"];
 const STORAGE_KEY = "szQuickPrintAndroid_v2";
@@ -693,7 +705,7 @@ function showToast(msg){
   t.textContent = msg || "";
   t.classList.remove("hidden");
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 2400);
+  window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 2600);
 }
 window.showToast = showToast;
 
@@ -941,6 +953,107 @@ async function importStemFile(){
 }
 window.importStemFile = importStemFile;
 
+function getSlackWebhookUrl(){
+  const saved = localStorage.getItem(SLACK_WEBHOOK_KEY) || "";
+  return DCE1_HARDCODED_SLACK_WEBHOOK_URL || saved;
+}
+
+function saveSlackWebhookUrl(){
+  const input = document.getElementById("slackWebhookUrl");
+  if(!input) return;
+
+  const value = input.value.trim();
+
+  if(value){
+    localStorage.setItem(SLACK_WEBHOOK_KEY, value);
+    showToast("Slack webhook saved");
+  }else{
+    localStorage.removeItem(SLACK_WEBHOOK_KEY);
+    showToast("Slack webhook cleared");
+  }
+}
+
+function ensureSlackSetupUi(){
+  if(document.getElementById("slackWebhookUrl")) return;
+
+  const setupPanel = document.querySelector(".setup-panel");
+  const setupActions = document.querySelector(".setup-row[style*='display:flex']");
+
+  if(!setupPanel || !setupActions) return;
+
+  const row = document.createElement("div");
+  row.className = "setup-row";
+  row.innerHTML = `
+    <label>Slack webhook URL</label>
+    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack webhook URL">
+    <button id="saveSlackWebhook" class="btn-primary" style="margin-top:6px;width:100%;">Save Slack Webhook</button>
+  `;
+
+  setupPanel.insertBefore(row, setupActions);
+
+  document.getElementById("slackWebhookUrl").value =
+    localStorage.getItem(SLACK_WEBHOOK_KEY) || "";
+
+  document.getElementById("saveSlackWebhook").onclick = saveSlackWebhookUrl;
+}
+
+async function notifyMissingLabel(label){
+  const webhookUrl = getSlackWebhookUrl();
+
+  if(!webhookUrl){
+    showToast("Slack webhook missing. Add it in Setup.");
+    openSetup();
+    return;
+  }
+
+  const message =
+    `Hey Team Sort Zone Location for "${label}" is reported missing or damaged, ` +
+    `Please take action accordingly - Thank You 👋 <!here>`;
+
+  try{
+    showToast("Sending Slack notification...");
+
+    await fetch(webhookUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: message
+      })
+    });
+
+    showToast("Great! Team has been notified to fix the label");
+  }catch(e){
+    showToast("Slack notification failed");
+  }
+}
+
+function ensureNotifyButton(label){
+  let btn = document.getElementById("notifyMissingLabelBtn");
+
+  if(!btn){
+    btn = document.createElement("button");
+    btn.id = "notifyMissingLabelBtn";
+    btn.textContent = "Notify Missing Label 🔔";
+    btn.className = "btn-primary";
+    btn.style.width = "100%";
+    btn.style.marginTop = "8px";
+    btn.style.minHeight = "46px";
+    btn.style.borderRadius = "8px";
+    btn.style.background = "#4472c4";
+    btn.style.color = "white";
+    btn.style.fontSize = "18px";
+    btn.style.fontWeight = "900";
+
+    const panel = document.querySelector(".preview-panel");
+    if(panel) panel.appendChild(btn);
+  }
+
+  btn.onclick = () => notifyMissingLabel(label);
+}
+
 function renderQuickHome(){
   updateStatus();
 
@@ -1120,6 +1233,8 @@ async function previewLabel(label, ov){
     showToast("Leave it with Imran, he will do some magic to enable printing through phone");
   };
 
+  ensureNotifyButton(label);
+
   document.getElementById("previewOverlay").classList.remove("hidden");
 }
 window.previewLabel = previewLabel;
@@ -1137,6 +1252,7 @@ function openSetup(){
   populateClusters();
   renderRanges();
   renderSlotCharConfig();
+  ensureSlackSetupUi();
 }
 
 function closeSetup(){
@@ -1222,7 +1338,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=23").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=24").catch(() => {});
 }
 </script>
 </body>
