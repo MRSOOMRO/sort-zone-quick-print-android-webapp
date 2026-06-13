@@ -1022,7 +1022,7 @@ async function notifyMissingLabel(label){
   const webhookUrl = getSlackWebhookUrl();
 
   if(!webhookUrl){
-    showToast("Slack workflow URL missing. Add it in Setup.");
+    showToast("Slack URL missing. Add it in Setup.");
     openSetup();
     return;
   }
@@ -1034,6 +1034,10 @@ async function notifyMissingLabel(label){
     return;
   }
 
+  const message =
+    `Hey Team Sort Zone Location for "${label}" is reported missing or damaged, ` +
+    `Please take action accordingly - Thank You 👋 <!here>`;
+
   const btn = document.getElementById("notifyMissingLabelBtn");
 
   try{
@@ -1042,15 +1046,13 @@ async function notifyMissingLabel(label){
       btn.textContent = "Sending...";
     }
 
-    showToast("Sending request for " + label + "...");
+    showToast("Sending Slack notification for " + label + "...");
 
     await fetch(webhookUrl, {
       method: "POST",
       mode: "no-cors",
       body: JSON.stringify({
-        Label: label,
-        text: label,
-        location: label
+        text: message
       })
     });
 
