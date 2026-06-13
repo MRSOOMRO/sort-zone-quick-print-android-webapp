@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quick Print v25</title>
+<title>Quick Print v26</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#24527a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -646,11 +646,11 @@ body {
 <div id="toast" class="toast hidden"></div>
 
 <script>
-const APP_VERSION = "v24";
+const APP_VERSION = "v26";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
 
-const SLACK_WEBHOOK_KEY = "";
+const SLACK_WEBHOOK_KEY = "SORT_ZONE_SLACK_WEBHOOK_URL";
 
 /*
   TEMP DCE1 hardcoded webhook.
@@ -659,7 +659,7 @@ const SLACK_WEBHOOK_KEY = "";
   Warning: If your GitHub repo is public, anyone can see this.
   Later, rotate/revoke it from Slack and use a safer backend/proxy.
 */
-const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "PASTE_YOUR_SLACK_WEBHOOK_URL_HERE";
+const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "";
 
 const CLUSTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const ALL_SLOTS = ["A","B","C","D","E","F","G","H","J","K","L","M"];
@@ -962,15 +962,12 @@ function getSlackWebhookUrl(){
   if(
     hardcoded &&
     !hardcoded.includes("PASTE_YOUR_SLACK_WEBHOOK_URL_HERE") &&
-    hardcoded.startsWith("https://hooks.slack.com/")
+    hardcoded.startsWith("https://")
   ){
     return hardcoded;
   }
 
-  if(
-    saved &&
-    saved.startsWith("https://hooks.slack.com/")
-  ){
+  if(saved && saved.startsWith("https://")){
     return saved;
   }
 
@@ -985,17 +982,17 @@ function saveSlackWebhookUrl(){
 
   if(!value){
     localStorage.removeItem(SLACK_WEBHOOK_KEY);
-    showToast("Slack webhook cleared");
+    showToast("Webhook/relay URL cleared");
     return;
   }
 
-  if(!value.startsWith("https://hooks.slack.com/")){
-    showToast("Invalid Slack webhook URL");
+  if(!value.startsWith("https://")){
+    showToast("Invalid URL");
     return;
   }
 
   localStorage.setItem(SLACK_WEBHOOK_KEY, value);
-  showToast("Slack webhook saved");
+  showToast("Webhook/relay URL saved");
 }
 function ensureSlackSetupUi(){
   if(document.getElementById("slackWebhookUrl")) return;
@@ -1008,9 +1005,9 @@ function ensureSlackSetupUi(){
   const row = document.createElement("div");
   row.className = "setup-row";
   row.innerHTML = `
-    <label>Slack webhook URL</label>
-    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack webhook URL">
-    <button id="saveSlackWebhook" class="btn-primary" style="margin-top:6px;width:100%;">Save Slack Webhook</button>
+    <label>Webhook / Relay URL</label>
+    <input id="slackWebhookUrl" type="password" placeholder="Paste Cloudflare Worker relay URL">
+    <button id="saveSlackWebhook" class="btn-primary" style="margin-top:6px;width:100%;">Save Webhook URL</button>
   `;
 
   setupPanel.insertBefore(row, setupActions);
@@ -1025,7 +1022,7 @@ async function notifyMissingLabel(label){
   const webhookUrl = getSlackWebhookUrl();
 
   if(!webhookUrl){
-    showToast("Slack webhook missing. Add it in Setup.");
+    showToast("Slack workflow URL missing. Add it in Setup.");
     openSetup();
     return;
   }
@@ -1045,27 +1042,29 @@ async function notifyMissingLabel(label){
       btn.textContent = "Sending...";
     }
 
-    showToast("Sending Slack notification for " + label + "...");
+    showToast("Sending request for " + label + "...");
 
     await fetch(webhookUrl, {
       method: "POST",
       mode: "no-cors",
       body: JSON.stringify({
-        Label: label
+        Label: label,
+        text: label,
+        location: label
       })
     });
 
     showToast("Request sent for " + label + ". Check Slack.");
 
     if(btn){
-      btn.textContent = "Team Notified ✅";
+      btn.textContent = "Request Sent ✅";
       setTimeout(() => {
         btn.disabled = false;
         btn.textContent = "Notify Missing Label 🔔";
       }, 2500);
     }
   }catch(e){
-    showToast("Slack notification failed");
+    showToast("Request failed");
 
     if(btn){
       btn.disabled = false;
@@ -1388,7 +1387,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=24").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=26").catch(() => {});
 }
 </script>
 </body>
