@@ -962,14 +962,14 @@ function getSlackWebhookUrl(){
   if(
     hardcoded &&
     !hardcoded.includes("PASTE_YOUR_SLACK_WEBHOOK_URL_HERE") &&
-    hardcoded.startsWith("https://hooks.slack.com/services/")
+    hardcoded.startsWith("https://hooks.slack.com/")
   ){
     return hardcoded;
   }
 
   if(
     saved &&
-    saved.startsWith("https://hooks.slack.com/services/")
+    saved.startsWith("https://hooks.slack.com/")
   ){
     return saved;
   }
