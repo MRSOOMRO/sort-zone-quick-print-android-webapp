@@ -43,7 +43,22 @@ button,.btn{padding:8px 10px;border:0;border-radius:6px;font-weight:800}
 .cluster-checkbox-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.cluster-checkbox-row label{display:flex;align-items:center;gap:4px;font-size:12px}
 .range-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;margin:4px 0}.slot-char-row{background:#e0ebff;padding:8px;border-radius:6px;margin-top:6px}
 .slot-char-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#233647;color:white;padding:18px 28px;border-radius:18px;font-weight:900;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.setup-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 999999 !important;
+}
 
+.preview-panel {
+  position: relative !important;
+  margin: auto !important;
+  max-height: 88vh !important;
+}
 /* v2.1 portrait-first Android layout */
 html, body { overflow:hidden; }
 .app { flex-direction:column !important; }
