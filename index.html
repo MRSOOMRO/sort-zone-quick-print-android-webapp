@@ -42,7 +42,7 @@ button,.btn{padding:8px 10px;border:0;border-radius:6px;font-weight:800}
 .setup-header{display:flex;justify-content:space-between;align-items:center;font-weight:900;margin-bottom:8px}.setup-row{margin-top:8px}.setup-row label{display:block;font-size:12px;font-weight:900;margin-bottom:3px}
 .cluster-checkbox-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.cluster-checkbox-row label{display:flex;align-items:center;gap:4px;font-size:12px}
 .range-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;margin:4px 0}.slot-char-row{background:#e0ebff;padding:8px;border-radius:6px;margin-top:6px}
-.slot-char-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#233647;color:white;padding:18px 28px;border-radius:18px;font-weight:900;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.slot-char-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#233647;color:white;padding:18px 28px;border-radius:18px;font-weight:900;z-index:1000000;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .setup-overlay {
   position: fixed !important;
   top: 0 !important;
@@ -584,7 +584,9 @@ body {
     min-height: 46px !important;
   }
 }
-
+.toast{
+  z-index:1000000 !important;
+}
 /* v1.4 resource id display */
 #previewSub {
   font-size: 15px !important;
