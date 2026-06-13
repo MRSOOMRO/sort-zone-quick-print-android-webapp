@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quick Print v26</title>
+<title>Quick Print v25</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#24527a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -59,6 +59,7 @@ button,.btn{padding:8px 10px;border:0;border-radius:6px;font-weight:800}
   margin: auto !important;
   max-height: 88vh !important;
 }
+/* v2.1 portrait-first Android layout */
 html, body { overflow:hidden; }
 .app { flex-direction:column !important; }
 .header {
@@ -201,6 +202,7 @@ body {
   opacity: .65;
 }
 
+/* v1.2 iPhone PWA safe-area and fit-to-screen fix */
 html,
 body {
   width: 100%;
@@ -390,6 +392,7 @@ body {
   }
 }
 
+/* v1.3 fixed visible iPhone PWA layout */
 html, body {
   width: 100%;
   height: 100%;
@@ -584,6 +587,7 @@ body {
 .toast{
   z-index:1000000 !important;
 }
+/* v1.4 resource id display */
 #previewSub {
   font-size: 15px !important;
   color: #333 !important;
@@ -594,6 +598,7 @@ body {
   padding: 0 10px;
 }
 
+/* v1.5 force actual Resource ID display */
 #previewSub {
   font-size: 15px !important;
   color: #222 !important;
@@ -641,20 +646,20 @@ body {
 <div id="toast" class="toast hidden"></div>
 
 <script>
-const APP_VERSION = "v26";
+const APP_VERSION = "v24";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
 
-// ============================================================
-// 🔴 REPLACE THIS WITH YOUR REAL SLACK WEBHOOK URL 🔴
-// Must be a valid Slack Incoming Webhook URL:
-// Format: https://hooks.slack.com/services/TXXXX/BXXXX/XXXXXXXXXXXXXXXXXXXX
-// ============================================================
-const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "https://hooks.slack.com/triggers/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";
-// ============================================================
+const SLACK_WEBHOOK_KEY = "";
 
-// Free CORS proxy to bypass browser restrictions
-const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+/*
+  TEMP DCE1 hardcoded webhook.
+  Paste your Slack webhook URL below.
+
+  Warning: If your GitHub repo is public, anyone can see this.
+  Later, rotate/revoke it from Slack and use a safer backend/proxy.
+*/
+const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "PASTE_YOUR_SLACK_WEBHOOK_URL_HERE";
 
 const CLUSTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const ALL_SLOTS = ["A","B","C","D","E","F","G","H","J","K","L","M"];
@@ -952,13 +957,20 @@ window.importStemFile = importStemFile;
 
 function getSlackWebhookUrl(){
   const hardcoded = String(DCE1_HARDCODED_SLACK_WEBHOOK_URL || "").trim();
-  const saved = String(localStorage.getItem("SLACK_WEBHOOK_URL") || "").trim();
+  const saved = String(localStorage.getItem(SLACK_WEBHOOK_KEY) || "").trim();
 
-  if(hardcoded && hardcoded.startsWith("https://hooks.slack.com/")){
+  if(
+    hardcoded &&
+    !hardcoded.includes("PASTE_YOUR_SLACK_WEBHOOK_URL_HERE") &&
+    hardcoded.startsWith("https://hooks.slack.com/")
+  ){
     return hardcoded;
   }
 
-  if(saved && saved.startsWith("https://hooks.slack.com/")){
+  if(
+    saved &&
+    saved.startsWith("https://hooks.slack.com/")
+  ){
     return saved;
   }
 
@@ -972,7 +984,7 @@ function saveSlackWebhookUrl(){
   const value = input.value.trim();
 
   if(!value){
-    localStorage.removeItem("SLACK_WEBHOOK_URL");
+    localStorage.removeItem(SLACK_WEBHOOK_KEY);
     showToast("Slack webhook cleared");
     return;
   }
@@ -982,10 +994,9 @@ function saveSlackWebhookUrl(){
     return;
   }
 
-  localStorage.setItem("SLACK_WEBHOOK_URL", value);
+  localStorage.setItem(SLACK_WEBHOOK_KEY, value);
   showToast("Slack webhook saved");
 }
-
 function ensureSlackSetupUi(){
   if(document.getElementById("slackWebhookUrl")) return;
 
@@ -1005,7 +1016,7 @@ function ensureSlackSetupUi(){
   setupPanel.insertBefore(row, setupActions);
 
   document.getElementById("slackWebhookUrl").value =
-    localStorage.getItem("SLACK_WEBHOOK_URL") || "";
+    localStorage.getItem(SLACK_WEBHOOK_KEY) || "";
 
   document.getElementById("saveSlackWebhook").onclick = saveSlackWebhookUrl;
 }
@@ -1036,49 +1047,26 @@ async function notifyMissingLabel(label){
 
     showToast("Sending Slack notification for " + label + "...");
 
-    // Try direct first (may work in some environments)
-    let response;
-    try {
-      response = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `⚠️ *Missing Label Alert* ⚠️\n\nLabel: \`${label}\`\nTime: ${new Date().toLocaleString()}\n\nThis label was not found in the STEM database.`
-        })
-      });
-    } catch (directError) {
-      // If direct fails due to CORS, try with proxy
-      console.log("Direct fetch failed, trying with CORS proxy...");
-      response = await fetch(CORS_PROXY + webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `⚠️ *Missing Label Alert* ⚠️\n\nLabel: \`${label}\`\nTime: ${new Date().toLocaleString()}\n\nThis label was not found in the STEM database.`
-        })
-      });
-    }
+    await fetch(webhookUrl, {
+      method: "POST",
+      mode: "no-cors",
+      body: JSON.stringify({
+        Label: label
+      })
+    });
 
-    if(response && response.ok){
-      showToast("Slack notification sent successfully!");
-      if(btn){
-        btn.textContent = "Sent! ✅";
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = "Notify Missing Label 🔔";
-        }, 2500);
-      }
-    } else {
-      const errorText = response ? await response.text() : "No response";
-      console.error("Slack error:", errorText);
-      showToast("Slack failed. Check URL format.");
-      if(btn){
+    showToast("Request sent for " + label + ". Check Slack.");
+
+    if(btn){
+      btn.textContent = "Team Notified ✅";
+      setTimeout(() => {
         btn.disabled = false;
         btn.textContent = "Notify Missing Label 🔔";
-      }
+      }, 2500);
     }
   }catch(e){
-    console.error("Slack error:", e);
-    showToast("Error: " + (e.message || "Network error"));
+    showToast("Slack notification failed");
+
     if(btn){
       btn.disabled = false;
       btn.textContent = "Notify Missing Label 🔔";
@@ -1292,7 +1280,7 @@ async function previewLabel(label, ov){
   sendBtn.textContent = resourceId ? "Print Label" : "Import STEM first";
   sendBtn.onclick = () => {
     if(!resourceId) return showToast("No Resource Id found for " + label);
-    showToast("Print feature coming soon!");
+    showToast("Leave it with Imran, he will do some magic to enable printing through phone");
   };
 
   ensureNotifyButton(label);
