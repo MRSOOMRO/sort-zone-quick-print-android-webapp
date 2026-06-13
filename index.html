@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quick Print v22</title>
+<title>Quick Print v23</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#24527a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1002,7 +1002,7 @@ function ensureSlackSetupUi(){
 async function notifyMissingLabel(label){
   const webhookUrl = getSlackWebhookUrl();
 
-  if(!webhookUrl){
+  if(!webhookUrl || webhookUrl.includes("PASTE_YOUR_SLACK_WEBHOOK_URL_HERE")){
     showToast("Slack webhook missing. Add it in Setup.");
     openSetup();
     return;
@@ -1012,23 +1012,40 @@ async function notifyMissingLabel(label){
     `Hey Team Sort Zone Location for "${label}" is reported missing or damaged, ` +
     `Please take action accordingly - Thank You 👋 <!here>`;
 
+  const btn = document.getElementById("notifyMissingLabelBtn");
+
   try{
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = "Sending...";
+    }
+
     showToast("Sending Slack notification...");
 
     await fetch(webhookUrl, {
       method: "POST",
       mode: "no-cors",
-      headers: {
-        "Content-Type": "application/json"
-      },
       body: JSON.stringify({
         text: message
       })
     });
 
     showToast("Great! Team has been notified to fix the label");
+
+    if(btn){
+      btn.textContent = "Team Notified ✅";
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = "Notify Missing Label 🔔";
+      }, 2500);
+    }
   }catch(e){
     showToast("Slack notification failed");
+
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = "Notify Missing Label 🔔";
+    }
   }
 }
 
@@ -1049,8 +1066,14 @@ function ensureNotifyButton(label){
     btn.style.fontSize = "18px";
     btn.style.fontWeight = "900";
 
+    const actions = document.querySelector(".preview-actions");
     const panel = document.querySelector(".preview-panel");
-    if(panel) panel.appendChild(btn);
+
+    if(actions){
+      actions.insertAdjacentElement("afterend", btn);
+    }else if(panel){
+      panel.appendChild(btn);
+    }
   }
 
   btn.onclick = () => notifyMissingLabel(label);
