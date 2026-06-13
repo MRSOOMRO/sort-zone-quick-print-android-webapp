@@ -1,8 +1,8 @@
-const CACHE = "sort-zone-qp-android-pwa-v23";
+const CACHE = "sort-zone-qp-android-pwa-v24";
 
 const ASSETS = [
   "./",
-  "./index.html?v=23",
+  "./index.html?v=24",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
