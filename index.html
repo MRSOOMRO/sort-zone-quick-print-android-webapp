@@ -1030,6 +1030,13 @@ async function notifyMissingLabel(label){
     return;
   }
 
+  label = String(label || "").trim();
+
+  if(!label){
+    showToast("Label missing. Please reopen preview.");
+    return;
+  }
+
   const btn = document.getElementById("notifyMissingLabelBtn");
 
   try{
@@ -1038,7 +1045,7 @@ async function notifyMissingLabel(label){
       btn.textContent = "Sending...";
     }
 
-    showToast("Sending Slack notification...");
+    showToast("Sending Slack notification for " + label + "...");
 
     await fetch(webhookUrl, {
       method: "POST",
@@ -1048,7 +1055,7 @@ async function notifyMissingLabel(label){
       })
     });
 
-    showToast("Great! Team has been notified to fix the label");
+    showToast("Great! Team has been notified for " + label);
 
     if(btn){
       btn.textContent = "Team Notified ✅";
@@ -1094,7 +1101,7 @@ function ensureNotifyButton(label){
     }
   }
 
-  btn.onclick = () => notifyMissingLabel(label);
+ btn.onclick = () => notifyMissingLabel(label);
 }
 
 function renderQuickHome(){
