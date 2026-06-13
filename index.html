@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quick Print v23</title>
+<title>Quick Print v25</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#24527a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -956,8 +956,25 @@ async function importStemFile(){
 window.importStemFile = importStemFile;
 
 function getSlackWebhookUrl(){
-  const saved = localStorage.getItem(SLACK_WEBHOOK_KEY) || "";
-  return DCE1_HARDCODED_SLACK_WEBHOOK_URL || saved;
+  const hardcoded = String(DCE1_HARDCODED_SLACK_WEBHOOK_URL || "").trim();
+  const saved = String(localStorage.getItem(SLACK_WEBHOOK_KEY) || "").trim();
+
+  if(
+    hardcoded &&
+    !hardcoded.includes("PASTE_YOUR_SLACK_WEBHOOK_URL_HERE") &&
+    hardcoded.startsWith("https://hooks.slack.com/services/")
+  ){
+    return hardcoded;
+  }
+
+  if(
+    saved &&
+    saved.startsWith("https://hooks.slack.com/services/")
+  ){
+    return saved;
+  }
+
+  return "";
 }
 
 function saveSlackWebhookUrl(){
@@ -966,15 +983,20 @@ function saveSlackWebhookUrl(){
 
   const value = input.value.trim();
 
-  if(value){
-    localStorage.setItem(SLACK_WEBHOOK_KEY, value);
-    showToast("Slack webhook saved");
-  }else{
+  if(!value){
     localStorage.removeItem(SLACK_WEBHOOK_KEY);
     showToast("Slack webhook cleared");
+    return;
   }
-}
 
+  if(!value.startsWith("https://hooks.slack.com/services/")){
+    showToast("Invalid Slack webhook URL");
+    return;
+  }
+
+  localStorage.setItem(SLACK_WEBHOOK_KEY, value);
+  showToast("Slack webhook saved");
+}
 function ensureSlackSetupUi(){
   if(document.getElementById("slackWebhookUrl")) return;
 
