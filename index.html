@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Quick Print v22</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#24527a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quick Print">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{--blue:#337ab7;--green:#5cb85c;--yellow:#f0ad4e;--orange:#f37c22;--purple:#7a32a8;--dark:#24527a}
+*{box-sizing:border-box;margin:0;padding:0;font-family:Calibri,Candara,"Segoe UI",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:#e4ecf5}
+.app{width:100vw;height:100vh;display:flex;flex-direction:column;background:#fff}
+.header{height:46px;display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:#f3f7ff;border-bottom:1px solid #d0d7e6;color:var(--dark);font-weight:800}
+.body{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+.footer{height:52px;background:#f3f4f7;border-top:1px solid #d0d3dd;display:flex;gap:8px;padding:7px 8px}
+.footer button{flex:1;border:0;border-radius:16px;font-weight:800;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.footer button.active{background:var(--dark);color:white}
+.footer .small{flex:0 0 54px}
+.cluster-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,1fr);gap:4px}
+.cluster-tile{display:flex;align-items:center;justify-content:center;color:white;font-size:64px;font-weight:900;border-radius:8px}
+.cluster-A{background:var(--blue)}.cluster-B{background:var(--green)}.cluster-C{background:var(--yellow)}.cluster-D{background:var(--orange)}
+.cluster-E,.cluster-F,.cluster-G,.cluster-H,.cluster-I,.cluster-J,.cluster-K,.cluster-L,.cluster-M,.cluster-N,.cluster-O,.cluster-P,.cluster-Q,.cluster-R,.cluster-S,.cluster-T,.cluster-U,.cluster-V,.cluster-W,.cluster-X,.cluster-Y,.cluster-Z{background:#577590}
+.search-row,.nav-row{display:flex;gap:6px}
+input,select{width:100%;padding:8px;border:1px solid #c0c5d2;border-radius:6px;font-size:14px}
+button,.btn{padding:8px 10px;border:0;border-radius:6px;font-weight:800}
+.btn-primary{background:var(--yellow);color:#333}.btn-grey{background:#d5d7dd;color:#333}
+.section-title{text-align:center;font-weight:900;color:var(--dark);font-size:18px;padding:2px}
+.aisle-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;overflow:auto}
+.aisle-tile{background:var(--blue);color:white;text-align:center;border-radius:6px;font-size:13px;font-weight:800;padding:9px 4px}
+.slot-grid{display:grid;gap:5px}.slot-tile{background:white;color:#111;border:3px solid #00a9e0;text-align:center;border-radius:10px;font-size:13px;font-weight:900;padding:9px 2px}
+.ov-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.ov-btn{background:var(--purple);color:white;text-align:center;border-radius:8px;font-size:14px;font-weight:900;padding:10px 2px}
+.label-box{background:#f0f4ff;border-radius:8px;padding:10px;text-align:center;min-height:170px}.label-title{font-size:22px;font-weight:900;color:var(--dark)}
+.qr-box img{width:120px;height:120px;margin:8px auto;display:block;background:white;border:1px solid #ccc;padding:4px}.print-btn{width:100%;background:var(--yellow);border-radius:8px;font-size:15px}
+.setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9;padding:10px}.hidden{display:none!important}
+.setup-panel{width:min(96vw,540px);max-height:94vh;overflow:auto;background:#c1d6f3;border-radius:12px;padding:12px;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.setup-header{display:flex;justify-content:space-between;align-items:center;font-weight:900;margin-bottom:8px}.setup-row{margin-top:8px}.setup-row label{display:block;font-size:12px;font-weight:900;margin-bottom:3px}
+.cluster-checkbox-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.cluster-checkbox-row label{display:flex;align-items:center;gap:4px;font-size:12px}
+.range-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;margin:4px 0}.slot-char-row{background:#e0ebff;padding:8px;border-radius:6px;margin-top:6px}
+.slot-char-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#233647;color:white;padding:18px 28px;border-radius:18px;font-weight:900;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+
+/* v2.1 portrait-first Android layout */
+html, body { overflow:hidden; }
+.app { flex-direction:column !important; }
+.header {
+  height:50px !important;
+  width:100% !important;
+  writing-mode:horizontal-tb !important;
+  justify-content:space-between !important;
+}
+.body {
+  flex:1 !important;
+  min-height:0 !important;
+  overflow:auto !important;
+  padding:8px !important;
+}
+.footer {
+  height:56px !important;
+  width:100% !important;
+  flex-direction:row !important;
+  border-left:0 !important;
+  border-top:1px solid #d0d3dd !important;
+}
+.cluster-grid {
+  grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+  grid-auto-rows:minmax(130px, 1fr);
+}
+.cluster-tile {
+  font-size:clamp(42px, 16vw, 72px) !important;
+  min-height:130px;
+}
+.search-row { flex:0 0 auto; }
+.aisle-grid {
+  grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
+}
+.slot-grid {
+  grid-template-columns:repeat(var(--slot-cols, 4), minmax(0, 1fr)) !important;
+}
+.slot-tile {
+  font-size:clamp(12px, 3.2vw, 18px) !important;
+  padding:10px 2px !important;
+}
+.ov-row {
+  grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+}
+.label-box {
+  min-height:auto !important;
+  max-height:none !important;
+  overflow:visible !important;
+  padding:10px !important;
+  margin-bottom:8px !important;
+}
+.qr-box img {
+  width:min(46vw, 170px) !important;
+  height:min(46vw, 170px) !important;
+}
+.print-btn {
+  position:static !important;
+  display:block;
+  margin-top:8px;
+  min-height:48px;
+}
+.nav-row {
+  position:static !important;
+  margin-top:6px;
+}
+@media (orientation:landscape) {
+  .cluster-grid { grid-template-columns:repeat(4, minmax(0, 1fr)) !important; grid-auto-rows:minmax(110px, 1fr); }
+  .cluster-tile { min-height:110px; font-size:48px !important; }
+  .aisle-grid { grid-template-columns:repeat(6, minmax(0, 1fr)) !important; }
+  .slot-grid { grid-template-columns:repeat(var(--slot-cols, 8), minmax(0, 1fr)) !important; }
+  .ov-row { grid-template-columns:repeat(4, minmax(0, 1fr)) !important; }
+  .qr-box img { width:min(26vw, 130px) !important; height:min(26vw, 130px) !important; }
+}
+
+.preview-panel{
+  width:min(92vw, 380px);
+  background:#f5f7fd;
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+}
+.preview-panel .setup-header{
+  margin-bottom:6px;
+}
+.preview-panel .setup-header span{
+  font-size:32px;
+  line-height:1.1;
+  color:#2f557f;
+  font-weight:900;
+  width:100%;
+  text-align:center;
+}
+.preview-panel .setup-header button{
+  min-width:36px;
+}
+.preview-qr{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:10px 0;
+}
+.preview-qr img{
+  width:min(46vw, 180px);
+  height:min(46vw, 180px);
+  background:white;
+  border:1px solid #ccc;
+  padding:4px;
+}
+.preview-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.preview-actions button{
+  min-height:46px;
+  font-size:18px;
+}
+@media (orientation:landscape){
+  .preview-panel{width:min(86vw, 420px);}
+  .preview-panel .setup-header span{font-size:26px;}
+  .preview-qr img{width:min(22vw, 130px);height:min(22vw, 130px);}
+  .preview-actions button{min-height:40px;font-size:16px;}
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.install-help {
+  font-size: 12px;
+  color: #24527a;
+  background: #fff9e6;
+  border: 1px solid #f0ad4e;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.preview-actions button:disabled {
+  opacity: .65;
+}
+
+/* v1.2 iPhone PWA safe-area and fit-to-screen fix */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  box-sizing: border-box;
+  background: #e4ecf5;
+}
+
+.app {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  flex: 0 0 auto;
+  min-height: 50px;
+  z-index: 5;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px;
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+.footer {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 58px;
+  padding: 7px 8px calc(7px + env(safe-area-inset-bottom)) 8px;
+  z-index: 10;
+  background: #f3f4f7;
+}
+
+.cluster-grid {
+  min-height: 0 !important;
+  grid-auto-rows: minmax(118px, 1fr);
+}
+
+.cluster-tile {
+  min-height: 118px !important;
+  max-height: 26dvh;
+}
+
+.aisle-grid {
+  min-height: 0 !important;
+  padding-bottom: 8px;
+}
+
+.aisle-tile {
+  min-height: 64px;
+}
+
+.slot-grid {
+  min-height: 0 !important;
+}
+
+.slot-tile {
+  min-height: 58px;
+}
+
+.ov-row {
+  margin-top: 8px;
+}
+
+.ov-btn {
+  min-height: 52px;
+}
+
+.setup-overlay {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)) 10px;
+  box-sizing: border-box;
+}
+
+.preview-panel,
+.setup-panel {
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.preview-qr img {
+  width: min(42vw, 160px) !important;
+  height: min(42vw, 160px) !important;
+}
+
+.preview-actions {
+  position: sticky;
+  bottom: 0;
+  background: #f5f7fd;
+  padding-top: 8px;
+}
+
+.nav-row {
+  flex: 0 0 auto;
+  margin-top: 6px;
+}
+
+@media (display-mode: standalone) {
+  .body {
+    padding-bottom: calc(90px + env(safe-area-inset-bottom));
+  }
+
+  .footer {
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (orientation: portrait) {
+  .cluster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .cluster-tile {
+    font-size: clamp(48px, 18vw, 70px) !important;
+  }
+
+  .aisle-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .slot-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .ov-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-height: 740px) and (orientation: portrait) {
+  .header {
+    min-height: 44px;
+  }
+
+  .header .title,
+  .header > div:first-child {
+    font-size: 20px;
+  }
+
+  .cluster-tile {
+    min-height: 106px !important;
+  }
+
+  .aisle-tile {
+    min-height: 56px;
+    padding: 7px 3px;
+  }
+
+  .slot-tile {
+    min-height: 52px;
+    padding: 7px 2px !important;
+  }
+
+  .ov-btn {
+    min-height: 46px;
+    padding: 8px 2px !important;
+  }
+
+  .preview-qr img {
+    width: min(38vw, 140px) !important;
+    height: min(38vw, 140px) !important;
+  }
+}
+
+/* v1.3 fixed visible iPhone PWA layout */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0 !important;
+  background: #e9eff7;
+}
+body {
+  padding-top: env(safe-area-inset-top) !important;
+  box-sizing: border-box;
+}
+.app {
+  height: calc(100dvh - env(safe-area-inset-top));
+  min-height: calc(100dvh - env(safe-area-inset-top));
+  max-height: calc(100dvh - env(safe-area-inset-top));
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  background: #ffffff;
+}
+.header {
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
+  flex: 0 0 58px !important;
+  padding: 8px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: #eef4fd !important;
+  border-bottom: 1px solid #d3dbe8 !important;
+  color: #24527a !important;
+}
+.header > div:first-child,
+.header > span:first-child {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+}
+.header-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+#status {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+}
+.header-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 34px;
+  padding: 4px 8px !important;
+  border: 0;
+  border-radius: 10px;
+  background: #f0ad4e;
+  color: #1e3348;
+  font-weight: 900;
+  font-size: 12px !important;
+}
+.footer { display: none !important; }
+.body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px !important;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.cluster-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+.cluster-tile {
+  min-height: 0 !important;
+  max-height: none !important;
+  height: 100% !important;
+  border-radius: 10px !important;
+  font-size: clamp(48px, 18vw, 76px) !important;
+}
+.search-row {
+  flex: 0 0 52px !important;
+  display: grid !important;
+  grid-template-columns: 1fr 108px !important;
+  gap: 8px !important;
+}
+.search-row input {
+  min-height: 52px !important;
+  height: 52px !important;
+  font-size: 16px !important;
+}
+.search-row button {
+  min-height: 52px !important;
+  height: 52px !important;
+  font-size: 15px !important;
+}
+.install-help { display: none !important; }
+.section-title {
+  flex: 0 0 auto;
+  font-size: 20px !important;
+  padding: 2px 0 4px !important;
+}
+.aisle-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  grid-auto-rows: minmax(64px, 1fr) !important;
+  gap: 6px !important;
+  overflow-y: auto !important;
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+}
+.aisle-tile {
+  min-height: 64px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+}
+.slot-grid {
+  flex: 0 0 auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+.slot-tile {
+  min-height: 52px !important;
+  padding: 6px 2px !important;
+  font-size: 15px !important;
+}
+.ov-row {
+  flex: 0 0 auto !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 6px !important;
+}
+.ov-btn {
+  min-height: 48px !important;
+  padding: 8px 2px !important;
+  font-size: 16px !important;
+}
+.setup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)) 10px !important;
+  box-sizing: border-box !important;
+  z-index: 9999 !important;
+}
+.setup-panel, .preview-panel {
+  max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px) !important;
+  overflow-y: auto !important;
+}
+.preview-qr img {
+  width: min(42vw, 150px) !important;
+  height: min(42vw, 150px) !important;
+}
+@media (max-height: 740px) {
+  .header {
+    height: 52px !important;
+    min-height: 52px !important;
+    flex-basis: 52px !important;
+  }
+  .header > div:first-child,
+  .header > span:first-child,
+  #status { font-size: 18px !important; }
+  .body { padding: 8px !important; gap: 8px !important; }
+  .search-row {
+    flex-basis: 46px !important;
+    grid-template-columns: 1fr 96px !important;
+  }
+  .search-row input,
+  .search-row button {
+    height: 46px !important;
+    min-height: 46px !important;
+  }
+}
+
+/* v1.4 resource id display */
+#previewSub {
+  font-size: 15px !important;
+  color: #333 !important;
+  font-weight: 800 !important;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  padding: 0 10px;
+}
+
+/* v1.5 force actual Resource ID display */
+#previewSub {
+  font-size: 15px !important;
+  color: #222 !important;
+  font-weight: 900 !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.25 !important;
+  padding: 0 12px !important;
+  text-align: center !important;
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header"><div>QUICK PRINT</div><div class="header-actions"><button id="headerImportStem" class="header-btn">Import</button><button id="headerSetup" class="header-btn">⚙</button><div id="status">STEM: 0</div></div></div>
+<div id="body" class="body"></div>
+<div class="footer"><button id="btnQuick" class="active">by: imrsooms</button><button id="btnSetup" class="small">⚙</button></div>
+</div>
+<div id="setupOverlay" class="setup-overlay hidden"><div class="setup-panel">
+<div class="setup-header"><span>Setup</span><button id="setupClose">x</button></div>
+<div class="install-help">Leave it with imrsooms, he will do some magic to print using your phone.</div>
+<div class="setup-row"><label>Active clusters</label><div id="clusterChecks" class="cluster-checkbox-row"></div></div>
+<div class="setup-row"><label>Aisle ranges</label><div id="rangeBox"></div></div>
+<div id="slotCharsConfig" class="setup-row"></div>
+<div class="setup-row" style="display:flex;gap:6px;"><button id="importStem" class="btn-primary">Import STEM</button><button id="refreshPrinters" class="btn-grey">Refresh</button><button id="setupSave" class="btn-primary">Save</button></div>
+</div></div>
+
+<div id="previewOverlay" class="setup-overlay hidden">
+  <div class="preview-panel">
+    <div class="setup-header">
+      <span id="previewTitle">Label Preview</span>
+      <button id="previewClose">x</button>
+    </div>
+    <div id="previewSub" style="font-size:13px;color:#555;text-align:center;margin-top:4px;">Resource ID: </div>
+    <div class="preview-qr">
+      <img id="previewQr" src="" alt="QR code">
+    </div>
+    <div class="preview-actions">
+      <button id="previewBack" class="btn-grey">Back</button>
+      <button id="previewSend" class="btn-primary">Send to Printer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const APP_VERSION = "v23";
+const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
+const REPO_STEM_URL = "./stem/DCE1.csv";
+const CLUSTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const ALL_SLOTS = ["A","B","C","D","E","F","G","H","J","K","L","M"];
+const STORAGE_KEY = "szQuickPrintAndroid_v2";
+const DB_NAME = "SortZoneQuickPrintDB";
+const DB_VERSION = 1;
+const STORE_NAME = "resources";
+const STEM_COUNT_KEY = "STEM_ROW_COUNT";
+
+const DEFAULT_CONFIG = {
+  printers:{mode:"wifi",wifiIp:"",wifiPort:"9100",bluetooth:"",usb:""},
+  clusters:{A:true,B:true,C:true,D:true},
+  ranges:{A:{from:1,to:52},B:{from:1,to:52},C:{from:1,to:28},D:{from:29,to:56}},
+  slotChars:{}
+};
+
+CLUSTERS.forEach(c => {
+  if(DEFAULT_CONFIG.clusters[c] === undefined) DEFAULT_CONFIG.clusters[c] = false;
+  if(!DEFAULT_CONFIG.ranges[c]) DEFAULT_CONFIG.ranges[c] = {from:1,to:56};
+  DEFAULT_CONFIG.slotChars[c] = ["A","B","C","D","E","G","H","J"];
+});
+
+let config = loadConfig();
+
+function loadConfig(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    Object.assign(cfg.printers, saved.printers || {});
+    Object.assign(cfg.clusters, saved.clusters || {});
+    Object.assign(cfg.ranges, saved.ranges || {});
+    Object.assign(cfg.slotChars, saved.slotChars || {});
+    return cfg;
+  }catch(e){
+    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  }
+}
+
+function saveConfig(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+}
+
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg || "";
+  t.classList.remove("hidden");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 2400);
+}
+window.showToast = showToast;
+
+function normalizeLabel(value){
+  return String(value || "").trim().toUpperCase();
+}
+
+function lookupKey(value){
+  return normalizeLabel(value).replace(/[^A-Z0-9]/g, "");
+}
+
+function parseCsvLine(line){
+  const out = [];
+  let cur = "";
+  let quote = false;
+
+  for(let i = 0; i < line.length; i++){
+    const ch = line[i];
+    const next = line[i + 1];
+
+    if(ch === '"' && quote && next === '"'){
+      cur += '"';
+      i++;
+    }else if(ch === '"'){
+      quote = !quote;
+    }else if(ch === "," && !quote){
+      out.push(cur.trim().replace(/^"|"$/g, ""));
+      cur = "";
+    }else{
+      cur += ch;
+    }
+  }
+
+  out.push(cur.trim().replace(/^"|"$/g, ""));
+  return out.map(x => x.trim());
+}
+
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function openDb(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+    req.onupgradeneeded = event => {
+      const db = event.target.result;
+      if(!db.objectStoreNames.contains(STORE_NAME)){
+        db.createObjectStore(STORE_NAME, { keyPath:"key" });
+      }
+    };
+
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+  });
+}
+
+async function clearResourceDb(){
+  const db = await openDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    tx.objectStore(STORE_NAME).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error("Clear failed"));
+  });
+}
+
+async function saveResourceBatch(items){
+  const db = await openDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+
+    for(const item of items){
+      store.put(item);
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error("Batch save failed"));
+  });
+}
+
+async function getResourceByKey(key){
+  const db = await openDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const req = tx.objectStore(STORE_NAME).get(key);
+
+    req.onsuccess = () => resolve(req.result ? req.result.id : "");
+    req.onerror = () => reject(req.error || new Error("Lookup failed"));
+  });
+}
+
+async function findResource(label){
+  const key = lookupKey(label);
+  if(!key) return "";
+  return await getResourceByKey(key);
+}
+window.findResource = findResource;
+
+function updateStatus(){
+  const count = Number(localStorage.getItem(STEM_COUNT_KEY) || "0");
+  const el = document.getElementById("status");
+  if(el) el.textContent = "STEM: " + count;
+}
+window.updateStatus = updateStatus;
+
+async function processStemCsvText(text, sourceName){
+  const cleanText = String(text || "").replace(/^\uFEFF/, "").replace(/\r/g, "");
+  const lines = cleanText.split("\n").filter(x => x.trim());
+
+  if(lines.length < 2){
+    showToast("STEM CSV file is empty");
+    return;
+  }
+
+  const header = parseCsvLine(lines[0]).map(x => x.trim().toLowerCase());
+
+  let labelIndex = header.indexOf("resource label");
+  let idIndex = header.indexOf("resource id");
+
+  if(labelIndex < 0) labelIndex = header.findIndex(x => x.includes("resource") && x.includes("label"));
+  if(idIndex < 0) idIndex = header.findIndex(x => x.includes("resource") && x.includes("id"));
+
+  if(labelIndex < 0 || idIndex < 0){
+    showToast("CSV needs Resource Label and Resource Id columns");
+    return;
+  }
+
+  showToast("Clearing old STEM...");
+  await clearResourceDb();
+
+  localStorage.removeItem("RESOURCE_MAP");
+  localStorage.removeItem("RESOURCE_MAP_COMPACT");
+
+  let count = 0;
+  let batch = [];
+  const BATCH_SIZE = 500;
+
+  for(let i = 1; i < lines.length; i++){
+    const row = parseCsvLine(lines[i]);
+
+    if(row.length <= Math.max(labelIndex, idIndex)) continue;
+
+    const label = row[labelIndex] || "";
+    const id = row[idIndex] || "";
+    const key = lookupKey(label);
+
+    if(key && String(id).trim()){
+      batch.push({
+        key: key,
+        id: String(id).trim()
+      });
+
+      count++;
+    }
+
+    if(batch.length >= BATCH_SIZE){
+      await saveResourceBatch(batch);
+      batch = [];
+
+      if(count % 5000 === 0){
+        showToast(sourceName + ": " + count + " rows...");
+        await sleep(40);
+      }else{
+        await sleep(0);
+      }
+    }
+  }
+
+  if(batch.length){
+    await saveResourceBatch(batch);
+  }
+
+  if(!count){
+    showToast("No Resource IDs found in CSV");
+    return;
+  }
+
+  localStorage.setItem(STEM_COUNT_KEY, String(count));
+  updateStatus();
+  showToast("Imported " + count + " STEM rows");
+}
+
+async function importRepoStem(){
+  try{
+    showToast("Loading DCE1 STEM from repo...");
+
+    const url = REPO_STEM_URL + "?v=" + Date.now();
+    const res = await fetch(url, { cache:"no-store" });
+
+    if(!res.ok){
+      showToast("Repo STEM failed: HTTP " + res.status);
+      return;
+    }
+
+    const text = await res.text();
+    await processStemCsvText(text, "Repo STEM");
+  }catch(e){
+    showToast("Repo STEM failed: " + (e && e.message ? e.message : e));
+  }
+}
+
+async function importLocalStem(){
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".csv,text/csv";
+
+  input.onchange = async () => {
+    const file = input.files && input.files[0];
+    if(!file) return;
+
+    const name = String(file.name || "").toLowerCase();
+
+    if(!name.endsWith(".csv")){
+      showToast("Only CSV files are allowed. Export Resource Management as .csv");
+      return;
+    }
+
+    try{
+      showToast("Reading local CSV...");
+      const text = await file.text();
+      await processStemCsvText(text, "Local CSV");
+    }catch(e){
+      showToast("Import failed: " + (e && e.message ? e.message : e));
+    }
+  };
+
+  input.click();
+}
+
+async function importStemFile(){
+  const useRepo = confirm(
+    "Import STEM Data\n\nOK = Load DCE1 STEM data from Server\nCancel = Upload local CSV"
+  );
+
+  if(useRepo){
+    await importRepoStem();
+  }else{
+    await importLocalStem();
+  }
+}
+window.importStemFile = importStemFile;
+
+function renderQuickHome(){
+  updateStatus();
+
+  const body = document.getElementById("body");
+  const grid = document.createElement("div");
+  grid.className = "cluster-grid";
+
+  CLUSTERS.forEach(c => {
+    if(!config.clusters[c]) return;
+
+    const d = document.createElement("div");
+    d.className = "cluster-tile cluster-" + c;
+    d.textContent = c;
+    d.onclick = () => renderAisles(c);
+    grid.appendChild(d);
+  });
+
+  const row = document.createElement("div");
+  row.className = "search-row";
+
+  const input = document.createElement("input");
+  input.placeholder = "Type label ID, example A1-1A";
+  input.oninput = () => {
+    input.value = input.value.toUpperCase().replace(/\s+/g, "");
+  };
+
+  const btn = document.createElement("button");
+  btn.className = "btn-primary";
+  btn.textContent = "Preview";
+  btn.onclick = () => input.value && showStandaloneLabel(input.value);
+
+  row.appendChild(input);
+  row.appendChild(btn);
+
+  body.innerHTML = "";
+
+  if(!window.navigator.standalone){
+    const help = document.createElement("div");
+    help.className = "install-help";
+    help.textContent = "iPhone: open in Safari, tap Share, then Add to Home Screen.";
+    body.appendChild(help);
+  }
+
+  body.appendChild(grid);
+  body.appendChild(row);
+}
+
+function renderAisles(cluster){
+  const body = document.getElementById("body");
+
+  const title = document.createElement("div");
+  title.className = "section-title";
+  title.textContent = "Cluster " + cluster;
+
+  const grid = document.createElement("div");
+  grid.className = "aisle-grid";
+
+  const range = config.ranges[cluster] || {from:1,to:56};
+
+  for(let i = Number(range.from) || 1; i <= (Number(range.to) || 56); i++){
+    const tile = document.createElement("div");
+    tile.className = "aisle-tile";
+    tile.textContent = cluster + i;
+    tile.onclick = () => renderSlots(cluster, i);
+    grid.appendChild(tile);
+  }
+
+  const nav = document.createElement("div");
+  nav.className = "nav-row";
+
+  const back = document.createElement("button");
+  back.className = "btn-grey";
+  back.style.flex = "1";
+  back.textContent = "Back";
+  back.onclick = renderQuickHome;
+
+  nav.appendChild(back);
+
+  body.innerHTML = "";
+  body.appendChild(title);
+  body.appendChild(grid);
+  body.appendChild(nav);
+}
+
+function getSlotChars(cluster){
+  return config.slotChars[cluster] && config.slotChars[cluster].length ? config.slotChars[cluster] : ALL_SLOTS;
+}
+
+function renderSlots(cluster, aisle){
+  const body = document.getElementById("body");
+
+  const title = document.createElement("div");
+  title.className = "section-title";
+  title.textContent = cluster + aisle;
+
+  const slots = getSlotChars(cluster);
+
+  const grid = document.createElement("div");
+  grid.className = "slot-grid";
+  grid.style.setProperty("--slot-cols", String(window.innerHeight > window.innerWidth ? 4 : Math.min(slots.length, 8)));
+
+  if(window.innerHeight > window.innerWidth){
+    ["A","B","C","D","E","F","G","H","J","K","L","M"]
+      .filter(x => slots.includes(x))
+      .forEach(letter => {
+        ["1","2","3","4"].forEach(row => {
+          const label = cluster + aisle + "-" + row + letter;
+          const tile = document.createElement("div");
+          tile.className = "slot-tile";
+          tile.textContent = label;
+          tile.onclick = () => previewLabel(label, false);
+          grid.appendChild(tile);
+        });
+      });
+  }else{
+    ["4","3","2","1"].forEach(row => {
+      slots.forEach(letter => {
+        const label = cluster + aisle + "-" + row + letter;
+        const tile = document.createElement("div");
+        tile.className = "slot-tile";
+        tile.textContent = label;
+        tile.onclick = () => previewLabel(label, false);
+        grid.appendChild(tile);
+      });
+    });
+  }
+
+  const ovRow = document.createElement("div");
+  ovRow.className = "ov-row";
+
+  ["P","T","W","Y","R","U","X","Z"].forEach(letter => {
+    const label = cluster + aisle + "-" + letter;
+    const tile = document.createElement("div");
+    tile.className = "ov-btn";
+    tile.textContent = label;
+    tile.onclick = () => previewLabel(label, true);
+    ovRow.appendChild(tile);
+  });
+
+  const box = document.createElement("div");
+  box.id = "labelBox";
+  box.className = "label-box";
+  box.textContent = "Tap a label to preview";
+
+  const nav = document.createElement("div");
+  nav.className = "nav-row";
+
+  const back = document.createElement("button");
+  back.className = "btn-grey";
+  back.style.flex = "1";
+  back.textContent = "Back";
+  back.onclick = () => renderAisles(cluster);
+
+  nav.appendChild(back);
+
+  body.innerHTML = "";
+  body.appendChild(title);
+  body.appendChild(grid);
+  body.appendChild(ovRow);
+  body.appendChild(box);
+  body.appendChild(nav);
+}
+
+async function previewLabel(label, ov){
+  const resourceId = await findResource(label);
+  const data = resourceId || label;
+  const qr = QR_BASE + "?size=220x220&data=" + encodeURIComponent(data);
+
+  document.getElementById("previewTitle").textContent = label;
+  document.getElementById("previewSub").textContent = resourceId ? "Resource ID: " + resourceId : "No Resource ID found for " + label;
+  document.getElementById("previewQr").src = qr;
+
+  const sendBtn = document.getElementById("previewSend");
+  sendBtn.textContent = resourceId ? "Print Label" : "Import STEM first";
+  sendBtn.onclick = () => {
+    if(!resourceId) return showToast("No Resource Id found for " + label);
+    showToast("Leave it with Imran, he will do some magic to enable printing through phone");
+  };
+
+  document.getElementById("previewOverlay").classList.remove("hidden");
+}
+window.previewLabel = previewLabel;
+
+function closePreview(){
+  document.getElementById("previewOverlay").classList.add("hidden");
+}
+
+function showStandaloneLabel(label){
+  previewLabel(label, false);
+}
+
+function openSetup(){
+  document.getElementById("setupOverlay").classList.remove("hidden");
+  populateClusters();
+  renderRanges();
+  renderSlotCharConfig();
+}
+
+function closeSetup(){
+  document.getElementById("setupOverlay").classList.add("hidden");
+}
+
+function populatePrinterLists(){}
+
+function populateClusters(){
+  const wrap = document.getElementById("clusterChecks");
+  wrap.innerHTML = "";
+
+  CLUSTERS.forEach(c => {
+    const label = document.createElement("label");
+    label.innerHTML = `<input type="checkbox" id="chk${c}" ${config.clusters[c] ? "checked" : ""}> ${c}`;
+    wrap.appendChild(label);
+  });
+}
+
+function renderRanges(){
+  const box = document.getElementById("rangeBox");
+  box.innerHTML = "";
+
+  CLUSTERS.forEach(c => {
+    const r = config.ranges[c] || {from:1,to:56};
+    const row = document.createElement("div");
+    row.className = "range-row";
+    row.innerHTML = `<b>${c}</b><input id="r${c}f" value="${r.from}"><input id="r${c}t" value="${r.to}">`;
+    box.appendChild(row);
+  });
+}
+
+function renderSlotCharConfig(){
+  const container = document.getElementById("slotCharsConfig");
+  container.innerHTML = "<label>Bag locations by cluster</label>";
+
+  CLUSTERS.forEach(c => {
+    const section = document.createElement("div");
+    section.className = "slot-char-row";
+
+    const current = getSlotChars(c);
+
+    section.innerHTML =
+      `<b>Cluster ${c}</b><div class="slot-char-selector">` +
+      ALL_SLOTS.map(ch => `<label><input type="checkbox" id="slot${c}${ch}" ${current.includes(ch) ? "checked" : ""}> ${ch}</label>`).join("") +
+      `</div>`;
+
+    container.appendChild(section);
+  });
+}
+
+function saveSetup(){
+  CLUSTERS.forEach(c => {
+    config.clusters[c] = document.getElementById("chk" + c).checked;
+
+    config.ranges[c] = {
+      from:Number(document.getElementById("r" + c + "f").value) || 1,
+      to:Number(document.getElementById("r" + c + "t").value) || 56
+    };
+
+    const selected = ALL_SLOTS.filter(ch => document.getElementById("slot" + c + ch).checked);
+    config.slotChars[c] = selected.length ? selected : ["A"];
+  });
+
+  saveConfig();
+  closeSetup();
+  renderQuickHome();
+  showToast("Settings saved");
+}
+
+document.getElementById("btnQuick").onclick = renderQuickHome;
+document.getElementById("headerSetup").onclick = openSetup;
+document.getElementById("headerImportStem").onclick = importStemFile;
+document.getElementById("btnSetup").onclick = openSetup;
+document.getElementById("setupClose").onclick = closeSetup;
+document.getElementById("setupSave").onclick = saveSetup;
+document.getElementById("refreshPrinters").onclick = populatePrinterLists;
+document.getElementById("importStem").onclick = importStemFile;
+document.getElementById("previewClose").onclick = closePreview;
+document.getElementById("previewBack").onclick = closePreview;
+
+updateStatus();
+renderQuickHome();
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./service-worker.js?v=23").catch(() => {});
+}
+</script>
+</body>
+</html>
