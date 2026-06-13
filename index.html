@@ -653,13 +653,11 @@ const REPO_STEM_URL = "./stem/DCE1.csv";
 const SLACK_WEBHOOK_KEY = "SORT_ZONE_SLACK_WEBHOOK_URL";
 
 /*
-  TEMP DCE1 hardcoded webhook.
-  Paste your Slack webhook URL below.
-
-  Warning: If your GitHub repo is public, anyone can see this.
-  Later, rotate/revoke it from Slack and use a safer backend/proxy.
+Paste your Slack Workflow trigger URL here temporarily if needed.
+Example:
+https://hooks.slack.com/triggers/...
 */
-const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "PASTE_YOUR_SLACK_WEBHOOK_URL_HERE";
+const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "";
 
 const CLUSTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const ALL_SLOTS = ["A","B","C","D","E","F","G","H","J","K","L","M"];
@@ -985,18 +983,19 @@ function saveSlackWebhookUrl(){
 
   if(!value){
     localStorage.removeItem(SLACK_WEBHOOK_KEY);
-    showToast("Slack webhook cleared");
+    showToast("Slack workflow URL cleared");
     return;
   }
 
   if(!value.startsWith("https://hooks.slack.com/")){
-    showToast("Invalid Slack webhook URL");
+    showToast("Invalid Slack workflow URL");
     return;
   }
 
   localStorage.setItem(SLACK_WEBHOOK_KEY, value);
-  showToast("Slack webhook saved");
+  showToast("Slack workflow URL saved");
 }
+  
 function ensureSlackSetupUi(){
   if(document.getElementById("slackWebhookUrl")) return;
 
@@ -1025,7 +1024,7 @@ async function notifyMissingLabel(label){
   const webhookUrl = getSlackWebhookUrl();
 
   if(!webhookUrl){
-    showToast("Slack webhook missing. Add it in Setup.");
+    showToast("Slack workflow URL missing. Add it in Setup.");
     openSetup();
     return;
   }
@@ -1047,15 +1046,21 @@ async function notifyMissingLabel(label){
 
     showToast("Sending Slack notification for " + label + "...");
 
-    await fetch(webhookUrl, {
+    const response = await fetch(webhookUrl, {
       method: "POST",
-      mode: "no-cors",
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
         Label: label
       })
     });
 
-    showToast("Request sent for " + label + ". Check Slack.");
+    if(!response.ok){
+      throw new Error("HTTP " + response.status);
+    }
+
+    showToast("Great! Team has been notified for " + label);
 
     if(btn){
       btn.textContent = "Team Notified ✅";
@@ -1065,7 +1070,7 @@ async function notifyMissingLabel(label){
       }, 2500);
     }
   }catch(e){
-    showToast("Slack notification failed");
+    showToast("Slack failed: " + (e && e.message ? e.message : "blocked"));
 
     if(btn){
       btn.disabled = false;
