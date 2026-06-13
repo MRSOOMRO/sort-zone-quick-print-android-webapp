@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quick Print v26</title>
+<title>Quick Print v22</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#24527a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -42,7 +42,7 @@ button,.btn{padding:8px 10px;border:0;border-radius:6px;font-weight:800}
 .setup-header{display:flex;justify-content:space-between;align-items:center;font-weight:900;margin-bottom:8px}.setup-row{margin-top:8px}.setup-row label{display:block;font-size:12px;font-weight:900;margin-bottom:3px}
 .cluster-checkbox-row{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.cluster-checkbox-row label{display:flex;align-items:center;gap:4px;font-size:12px}
 .range-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;margin:4px 0}.slot-char-row{background:#e0ebff;padding:8px;border-radius:6px;margin-top:6px}
-.slot-char-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#233647;color:white;padding:18px 28px;border-radius:18px;font-weight:900;z-index:1000000;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.slot-char-selector{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}.toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#233647;color:white;padding:18px 28px;border-radius:18px;font-weight:900;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .setup-overlay {
   position: fixed !important;
   top: 0 !important;
@@ -584,9 +584,7 @@ body {
     min-height: 46px !important;
   }
 }
-.toast{
-  z-index:1000000 !important;
-}
+
 /* v1.4 resource id display */
 #previewSub {
   font-size: 15px !important;
@@ -646,21 +644,9 @@ body {
 <div id="toast" class="toast hidden"></div>
 
 <script>
-const APP_VERSION = "v26";
+const APP_VERSION = "v23";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
-
-const SLACK_WEBHOOK_KEY = "SORT_ZONE_SLACK_WEBHOOK_URL";
-
-/*
-  TEMP DCE1 hardcoded webhook.
-  Paste your Slack webhook URL below.
-
-  Warning: If your GitHub repo is public, anyone can see this.
-  Later, rotate/revoke it from Slack and use a safer backend/proxy.
-*/
-const DCE1_HARDCODED_SLACK_WEBHOOK_URL = "";
-
 const CLUSTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const ALL_SLOTS = ["A","B","C","D","E","F","G","H","J","K","L","M"];
 const STORAGE_KEY = "szQuickPrintAndroid_v2";
@@ -707,7 +693,7 @@ function showToast(msg){
   t.textContent = msg || "";
   t.classList.remove("hidden");
   clearTimeout(window.__toastTimer);
-  window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 2600);
+  window.__toastTimer = setTimeout(() => t.classList.add("hidden"), 2400);
 }
 window.showToast = showToast;
 
@@ -955,158 +941,6 @@ async function importStemFile(){
 }
 window.importStemFile = importStemFile;
 
-function getSlackWebhookUrl(){
-  const hardcoded = String(DCE1_HARDCODED_SLACK_WEBHOOK_URL || "").trim();
-  const saved = String(localStorage.getItem(SLACK_WEBHOOK_KEY) || "").trim();
-
-  if(
-    hardcoded &&
-    !hardcoded.includes("PASTE_YOUR_SLACK_WEBHOOK_URL_HERE") &&
-    hardcoded.startsWith("https://")
-  ){
-    return hardcoded;
-  }
-
-  if(saved && saved.startsWith("https://")){
-    return saved;
-  }
-
-  return "";
-}
-
-function saveSlackWebhookUrl(){
-  const input = document.getElementById("slackWebhookUrl");
-  if(!input) return;
-
-  const value = input.value.trim();
-
-  if(!value){
-    localStorage.removeItem(SLACK_WEBHOOK_KEY);
-    showToast("Webhook/relay URL cleared");
-    return;
-  }
-
-  if(!value.startsWith("https://")){
-    showToast("Invalid URL");
-    return;
-  }
-
-  localStorage.setItem(SLACK_WEBHOOK_KEY, value);
-  showToast("Webhook/relay URL saved");
-}
-function ensureSlackSetupUi(){
-  if(document.getElementById("slackWebhookUrl")) return;
-
-  const setupPanel = document.querySelector(".setup-panel");
-  const setupActions = document.querySelector(".setup-row[style*='display:flex']");
-
-  if(!setupPanel || !setupActions) return;
-
-  const row = document.createElement("div");
-  row.className = "setup-row";
-  row.innerHTML = `
-    <label>Webhook / Relay URL</label>
-    <input id="slackWebhookUrl" type="password" placeholder="Paste Cloudflare Worker relay URL">
-    <button id="saveSlackWebhook" class="btn-primary" style="margin-top:6px;width:100%;">Save Webhook URL</button>
-  `;
-
-  setupPanel.insertBefore(row, setupActions);
-
-  document.getElementById("slackWebhookUrl").value =
-    localStorage.getItem(SLACK_WEBHOOK_KEY) || "";
-
-  document.getElementById("saveSlackWebhook").onclick = saveSlackWebhookUrl;
-}
-
-async function notifyMissingLabel(label){
-  const webhookUrl = getSlackWebhookUrl();
-
-  if(!webhookUrl){
-    showToast("Webhook/relay URL missing. Add it in Setup.");
-    openSetup();
-    return;
-  }
-
-  label = String(label || "").trim();
-
-  if(!label){
-    showToast("Label missing. Please reopen preview.");
-    return;
-  }
-
-  const btn = document.getElementById("notifyMissingLabelBtn");
-
-  try{
-    if(btn){
-      btn.disabled = true;
-      btn.textContent = "Sending...";
-    }
-
-    showToast("Sending notification for " + label + "...");
-
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        Label: label
-      })
-    });
-
-    if(!response.ok){
-      throw new Error("HTTP " + response.status);
-    }
-
-    showToast("Great! Team has been notified for " + label);
-
-    if(btn){
-      btn.textContent = "Team Notified ✅";
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = "Notify Missing Label 🔔";
-      }, 2500);
-    }
-  }catch(e){
-    showToast("Slack failed: " + (e && e.message ? e.message : "Failed to fetch"));
-
-    if(btn){
-      btn.disabled = false;
-      btn.textContent = "Notify Missing Label 🔔";
-    }
-  }
-}
-
-function ensureNotifyButton(label){
-  let btn = document.getElementById("notifyMissingLabelBtn");
-
-  if(!btn){
-    btn = document.createElement("button");
-    btn.id = "notifyMissingLabelBtn";
-    btn.textContent = "Notify Missing Label 🔔";
-    btn.className = "btn-primary";
-    btn.style.width = "100%";
-    btn.style.marginTop = "8px";
-    btn.style.minHeight = "46px";
-    btn.style.borderRadius = "8px";
-    btn.style.background = "#4472c4";
-    btn.style.color = "white";
-    btn.style.fontSize = "18px";
-    btn.style.fontWeight = "900";
-
-    const actions = document.querySelector(".preview-actions");
-    const panel = document.querySelector(".preview-panel");
-
-    if(actions){
-      actions.insertAdjacentElement("afterend", btn);
-    }else if(panel){
-      panel.appendChild(btn);
-    }
-  }
-
- btn.onclick = () => notifyMissingLabel(label);
-}
-
 function renderQuickHome(){
   updateStatus();
 
@@ -1286,8 +1120,6 @@ async function previewLabel(label, ov){
     showToast("Leave it with Imran, he will do some magic to enable printing through phone");
   };
 
-  ensureNotifyButton(label);
-
   document.getElementById("previewOverlay").classList.remove("hidden");
 }
 window.previewLabel = previewLabel;
@@ -1305,7 +1137,6 @@ function openSetup(){
   populateClusters();
   renderRanges();
   renderSlotCharConfig();
-  ensureSlackSetupUi();
 }
 
 function closeSetup(){
@@ -1391,7 +1222,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=26").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=23").catch(() => {});
 }
 </script>
 </body>
