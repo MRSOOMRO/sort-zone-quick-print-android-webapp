@@ -989,7 +989,7 @@ function saveSlackWebhookUrl(){
     return;
   }
 
-  if(!value.startsWith("https://hooks.slack.com/services/")){
+  if(!value.startsWith("https://hooks.slack.com/")){
     showToast("Invalid Slack webhook URL");
     return;
   }
