@@ -644,9 +644,12 @@ body {
 </div>
 
 <div id="toast" class="toast hidden"></div>
+  
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
 
 <script>
-const APP_VERSION = "v26";
+const APP_VERSION = "v27";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
 
@@ -994,6 +997,121 @@ function saveSlackWebhookUrl(){
   localStorage.setItem(SLACK_WEBHOOK_KEY, value);
   showToast("Webhook/relay URL saved");
 }
+ let qrScanStream = null;
+let qrScanTimer = null;
+
+function createQrScannerOverlay(){
+  let overlay = document.getElementById("qrScannerOverlay");
+
+  if(overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "qrScannerOverlay";
+  overlay.className = "setup-overlay hidden";
+  overlay.innerHTML = `
+    <div class="preview-panel">
+      <div class="setup-header">
+        <span style="font-size:24px;">Scan Webhook QR</span>
+        <button id="closeQrScanner">x</button>
+      </div>
+      <video id="qrScannerVideo" playsinline style="width:100%;border-radius:12px;background:#000;"></video>
+      <canvas id="qrScannerCanvas" class="hidden"></canvas>
+      <button id="manualQrClose" class="btn-grey" style="width:100%;margin-top:10px;">Cancel</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById("closeQrScanner").onclick = stopWebhookQrScan;
+  document.getElementById("manualQrClose").onclick = stopWebhookQrScan;
+
+  return overlay;
+}
+
+async function startWebhookQrScan(){
+  if(typeof jsQR === "undefined"){
+    showToast("QR scanner not loaded. Check internet.");
+    return;
+  }
+
+  const overlay = createQrScannerOverlay();
+  const video = document.getElementById("qrScannerVideo");
+
+  try{
+    overlay.classList.remove("hidden");
+    showToast("Opening camera...");
+
+    qrScanStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment"
+      },
+      audio: false
+    });
+
+    video.srcObject = qrScanStream;
+    await video.play();
+
+    showToast("Scan webhook QR code");
+
+    scanQrFrame();
+  }catch(e){
+    showToast("Camera not available. Use manual paste.");
+    stopWebhookQrScan();
+  }
+}
+
+function scanQrFrame(){
+  const video = document.getElementById("qrScannerVideo");
+  const canvas = document.getElementById("qrScannerCanvas");
+
+  if(!video || !canvas || !qrScanStream) return;
+
+  const ctx = canvas.getContext("2d");
+
+  if(video.readyState === video.HAVE_ENOUGH_DATA){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const result = jsQR(imageData.data, imageData.width, imageData.height);
+
+    if(result && result.data){
+      const scannedUrl = String(result.data || "").trim();
+
+      if(scannedUrl.startsWith("https://hooks.slack.com/")){
+        document.getElementById("slackWebhookUrl").value = scannedUrl;
+        localStorage.setItem(SLACK_WEBHOOK_KEY, scannedUrl);
+        showToast("Webhook URL scanned and saved");
+        stopWebhookQrScan();
+        return;
+      }
+
+      showToast("QR found, but not Slack webhook URL");
+    }
+  }
+
+  qrScanTimer = requestAnimationFrame(scanQrFrame);
+}
+
+function stopWebhookQrScan(){
+  const overlay = document.getElementById("qrScannerOverlay");
+
+  if(qrScanTimer){
+    cancelAnimationFrame(qrScanTimer);
+    qrScanTimer = null;
+  }
+
+  if(qrScanStream){
+    qrScanStream.getTracks().forEach(track => track.stop());
+    qrScanStream = null;
+  }
+
+  if(overlay){
+    overlay.classList.add("hidden");
+  }
+} 
 function ensureSlackSetupUi(){
   if(document.getElementById("slackWebhookUrl")) return;
 
@@ -1005,9 +1123,12 @@ function ensureSlackSetupUi(){
   const row = document.createElement("div");
   row.className = "setup-row";
   row.innerHTML = `
-    <label>Webhook / Relay URL</label>
-    <input id="slackWebhookUrl" type="password" placeholder="Paste Cloudflare Worker relay URL">
-    <button id="saveSlackWebhook" class="btn-primary" style="margin-top:6px;width:100%;">Save Webhook URL</button>
+    <label>Slack Webhook URL</label>
+    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack webhook URL">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+      <button id="scanSlackWebhook" class="btn-grey">Scan QR Webhook</button>
+      <button id="saveSlackWebhook" class="btn-primary">Save Webhook URL</button>
+    </div>
   `;
 
   setupPanel.insertBefore(row, setupActions);
@@ -1016,6 +1137,7 @@ function ensureSlackSetupUi(){
     localStorage.getItem(SLACK_WEBHOOK_KEY) || "";
 
   document.getElementById("saveSlackWebhook").onclick = saveSlackWebhookUrl;
+  document.getElementById("scanSlackWebhook").onclick = startWebhookQrScan;
 }
 
 async function notifyMissingLabel(label){
@@ -1389,7 +1511,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=26").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=27").catch(() => {});
 }
 </script>
 </body>
