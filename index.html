@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Quick Print v26</title>
+<title>Quick Print v28</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#24527a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -609,6 +609,56 @@ body {
   padding: 0 12px !important;
   text-align: center !important;
 }
+
+/* v28 dev credit + verify QR data */
+.verify-qr-btn{
+  width:100%;
+  min-height:34px;
+  background:#24527a;
+  color:white;
+  border:2px solid #ff3333;
+  border-radius:6px;
+  font-size:18px;
+  font-weight:900;
+  padding:3px 6px;
+  line-height:1.1;
+}
+.dev-credit{
+  text-align:center;
+  font-size:11px;
+  font-weight:800;
+  color:#24527a;
+  padding:2px 0 0;
+}
+.dev-credit a{
+  color:#24527a;
+  text-decoration:none;
+}
+.verify-result-card{
+  text-align:center;
+  border-radius:16px;
+}
+.verify-result-title{
+  font-size:22px;
+  font-weight:900;
+  margin-bottom:8px;
+}
+.verify-result-icon{
+  font-size:28px;
+  margin-bottom:6px;
+}
+.verify-result-label{
+  font-size:34px;
+  font-weight:900;
+  margin-bottom:8px;
+}
+.verify-result-data{
+  font-size:13px;
+  word-break:break-all;
+  overflow-wrap:anywhere;
+  margin-bottom:12px;
+}
+
 </style>
 </head>
 <body>
@@ -649,7 +699,7 @@ body {
 
 
 <script>
-const APP_VERSION = "v27";
+const APP_VERSION = "v28";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
 
@@ -1111,7 +1161,222 @@ function stopWebhookQrScan(){
   if(overlay){
     overlay.classList.add("hidden");
   }
-} 
+}
+
+/* v28 Verify QR Data scanner */
+let verifyQrStream = null;
+let verifyQrTimer = null;
+
+function createVerifyQrOverlay(){
+  let overlay = document.getElementById("verifyQrOverlay");
+
+  if(overlay) return overlay;
+
+  overlay = document.createElement("div");
+  overlay.id = "verifyQrOverlay";
+  overlay.className = "setup-overlay hidden";
+  overlay.innerHTML = `
+    <div class="preview-panel">
+      <div class="setup-header">
+        <span style="font-size:24px;">Verify QR Data</span>
+        <button id="closeVerifyQr">x</button>
+      </div>
+      <video id="verifyQrVideo" playsinline style="width:100%;border-radius:12px;background:#000;"></video>
+      <canvas id="verifyQrCanvas" class="hidden"></canvas>
+      <button id="manualVerifyClose" class="btn-grey" style="width:100%;margin-top:10px;">Cancel</button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById("closeVerifyQr").onclick = stopVerifyQrScan;
+  document.getElementById("manualVerifyClose").onclick = stopVerifyQrScan;
+
+  return overlay;
+}
+
+async function startVerifyQrScan(){
+  if(typeof jsQR === "undefined"){
+    showToast("QR scanner not loaded. Check internet.");
+    return;
+  }
+
+  const overlay = createVerifyQrOverlay();
+  const video = document.getElementById("verifyQrVideo");
+
+  try{
+    overlay.classList.remove("hidden");
+    showToast("Opening camera...");
+
+    verifyQrStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "environment"
+      },
+      audio: false
+    });
+
+    video.srcObject = verifyQrStream;
+    await video.play();
+
+    showToast("Scan label QR code");
+    scanVerifyQrFrame();
+  }catch(e){
+    showToast("Camera not available.");
+    stopVerifyQrScan();
+  }
+}
+
+function scanVerifyQrFrame(){
+  const video = document.getElementById("verifyQrVideo");
+  const canvas = document.getElementById("verifyQrCanvas");
+
+  if(!video || !canvas || !verifyQrStream) return;
+
+  const ctx = canvas.getContext("2d");
+
+  if(video.readyState === video.HAVE_ENOUGH_DATA){
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const result = jsQR(imageData.data, imageData.width, imageData.height);
+
+    if(result && result.data){
+      const scannedData = String(result.data || "").trim();
+      stopVerifyQrScan();
+      verifyScannedQrData(scannedData);
+      return;
+    }
+  }
+
+  verifyQrTimer = requestAnimationFrame(scanVerifyQrFrame);
+}
+
+function stopVerifyQrScan(){
+  const overlay = document.getElementById("verifyQrOverlay");
+
+  if(verifyQrTimer){
+    cancelAnimationFrame(verifyQrTimer);
+    verifyQrTimer = null;
+  }
+
+  if(verifyQrStream){
+    verifyQrStream.getTracks().forEach(track => track.stop());
+    verifyQrStream = null;
+  }
+
+  if(overlay){
+    overlay.classList.add("hidden");
+  }
+}
+
+async function findLabelByResourceId(resourceId){
+  resourceId = String(resourceId || "").trim();
+
+  if(!resourceId) return null;
+
+  const db = await openDb();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.openCursor();
+
+    req.onsuccess = event => {
+      const cursor = event.target.result;
+
+      if(!cursor){
+        resolve(null);
+        return;
+      }
+
+      const item = cursor.value;
+
+      if(String(item.id || "").trim() === resourceId){
+        resolve(item);
+        return;
+      }
+
+      cursor.continue();
+    };
+
+    req.onerror = () => reject(req.error || new Error("QR lookup failed"));
+  });
+}
+
+async function verifyScannedQrData(scannedData){
+  showToast("Checking QR data...");
+
+  try{
+    const found = await findLabelByResourceId(scannedData);
+
+    if(found){
+      showVerifyResult(true, found.key, scannedData);
+    }else{
+      showVerifyResult(false, "", scannedData);
+    }
+  }catch(e){
+    showToast("Verify failed");
+  }
+}
+
+function showVerifyResult(found, labelKey, qrData){
+  let overlay = document.getElementById("verifyResultOverlay");
+
+  if(!overlay){
+    overlay = document.createElement("div");
+    overlay.id = "verifyResultOverlay";
+    overlay.className = "setup-overlay hidden";
+    document.body.appendChild(overlay);
+  }
+
+  const border = found ? "#5cb85c" : "#ff5722";
+  const title = found ? "SORT ZONE DATA FOUND" : "QR DATA NOT FOUND";
+  const icon = found ? "✅" : "⁉️";
+  const labelText = found ? restorePrettyLabel(labelKey) : "";
+
+  overlay.innerHTML = `
+    <div class="preview-panel verify-result-card" style="border:4px solid ${border};">
+      <div class="verify-result-title">${title}</div>
+      <div class="verify-result-icon">${icon}</div>
+      ${found ? `<div class="verify-result-label">${labelText}</div>` : ""}
+      <div class="verify-result-data">${escapeHtml(qrData)}</div>
+      <button class="btn-grey" style="width:100%;min-height:44px;" onclick="document.getElementById('verifyResultOverlay').classList.add('hidden')">Close</button>
+    </div>
+  `;
+
+  overlay.classList.remove("hidden");
+}
+
+function restorePrettyLabel(key){
+  key = String(key || "").toUpperCase();
+
+  const normal = key.match(/^([A-Z]+)(\d+)(\d)([A-Z])$/);
+
+  if(normal){
+    return normal[1] + normal[2] + "-" + normal[3] + normal[4];
+  }
+
+  const ov = key.match(/^([A-Z]+)(\d+)([A-Z])$/);
+
+  if(ov){
+    return ov[1] + ov[2] + "-" + ov[3];
+  }
+
+  return key;
+}
+
+function escapeHtml(value){
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function ensureSlackSetupUi(){
   if(document.getElementById("slackWebhookUrl")) return;
 
@@ -1270,8 +1535,19 @@ function renderQuickHome(){
     body.appendChild(help);
   }
 
+  const verifyBtn = document.createElement("button");
+  verifyBtn.className = "verify-qr-btn";
+  verifyBtn.innerHTML = "VERIFY QR DATA ✅ ? ❌";
+  verifyBtn.onclick = startVerifyQrScan;
+
+  const credit = document.createElement("div");
+  credit.className = "dev-credit";
+  credit.innerHTML = `Design & Dev: <a href="https://amazon.enterprise.slack.com/team/U07JTBHD2F3" target="_blank">imrsooms</a>`;
+
   body.appendChild(grid);
+  body.appendChild(verifyBtn);
   body.appendChild(row);
+  body.appendChild(credit);
 }
 
 function renderAisles(cluster){
@@ -1511,7 +1787,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=27").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=28").catch(() => {});
 }
 </script>
 </body>
