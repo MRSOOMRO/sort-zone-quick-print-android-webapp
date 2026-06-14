@@ -1,4 +1,4 @@
-const CACHE = "sort-zone-qp-android-pwa-v24";
+const CACHE = "sort-zone-qp-android-pwa-v27";
 
 const ASSETS = [
   "./",
