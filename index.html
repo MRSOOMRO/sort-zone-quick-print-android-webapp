@@ -704,7 +704,6 @@ const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
 
 const SLACK_WEBHOOK_KEY = "SORT_ZONE_SLACK_WEBHOOK_URL";
-const FIXED_BY_USER_KEY = "SORT_ZONE_FIXED_BY_USER";
 
 /*
   TEMP DCE1 hardcoded webhook.
@@ -1410,7 +1409,7 @@ async function notifyMissingLabel(label){
   const webhookUrl = getSlackWebhookUrl();
 
   if(!webhookUrl){
-    showToast("Slack URL missing. Add it in Setup.");
+    showToast("Slack Workflow URL missing. Add it in Setup.");
     openSetup();
     return;
   }
@@ -1423,29 +1422,7 @@ async function notifyMissingLabel(label){
   }
 
   const payload = {
-    text: `Sort Zone Label for "${label}" is reported missing or damaged`,
-    attachments: [
-      {
-        color: "#e01e5a",
-        fallback: `Sort Zone Label for "${label}" is reported missing or damaged`,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `*${label}*`
-            }
-          },
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `Hey Team :wave: Sort Zone Label for *"${label}"* is reported missing or damaged, Please take action accordingly - Thank You :slightly_smiling_face: <!here>`
-            }
-          }
-        ]
-      }
-    ]
+    Label: label
   };
 
   const btn = document.getElementById("notifyMissingLabelBtn");
@@ -1456,7 +1433,7 @@ async function notifyMissingLabel(label){
       btn.textContent = "Sending...";
     }
 
-    showToast("Sending Slack notification for " + label + "...");
+    showToast("Sending Slack workflow for " + label + "...");
 
     await fetch(webhookUrl, {
       method: "POST",
@@ -1483,151 +1460,34 @@ async function notifyMissingLabel(label){
   }
 }
 
-function getDetectedOrSavedUsername(){
-  try{
-    const sccName = window.sessionStorage.getItem("boson.employeeName");
-    if(sccName){
-      return String(sccName).replaceAll('"', '').split("@")[0].trim();
-    }
-  }catch(e){}
-
-  return String(localStorage.getItem(FIXED_BY_USER_KEY) || "").trim();
-}
-
-function getFixedByUsername(){
-  let username = getDetectedOrSavedUsername();
-
-  if(username){
-    return username;
-  }
-
-  username = prompt("Enter your username for fixed label messages", "");
-  username = String(username || "").trim();
-
-  if(username){
-    localStorage.setItem(FIXED_BY_USER_KEY, username);
-    return username;
-  }
-
-  return "Unknown User";
-}
-
-async function notifyLabelFixed(label){
-  const webhookUrl = getSlackWebhookUrl();
-
-  if(!webhookUrl){
-    showToast("Slack URL missing. Add it in Setup.");
-    openSetup();
-    return;
-  }
-
-  label = String(label || "").trim();
-
-  if(!label){
-    showToast("Label missing. Please reopen preview.");
-    return;
-  }
-
-  const username = getFixedByUsername();
-
-  const payload = {
-    text: `${label}, Has been fixed by ${username}`,
-    attachments: [
-      {
-        color: "#2eb67d",
-        fallback: `${label}, Has been fixed by ${username}`,
-        blocks: [
-          {
-            type: "section",
-            text: {
-              type: "mrkdwn",
-              text: `*${label}*, Has been fixed by ${username}`
-            }
-          }
-        ]
-      }
-    ]
-  };
-
-  const btn = document.getElementById("markLabelFixedBtn");
-
-  try{
-    if(btn){
-      btn.disabled = true;
-      btn.textContent = "Sending...";
-    }
-
-    showToast("Sending fixed update for " + label + "...");
-
-    await fetch(webhookUrl, {
-      method: "POST",
-      mode: "no-cors",
-      body: JSON.stringify(payload)
-    });
-
-    showToast("Fixed update sent for " + label + ". Check Slack.");
-
-    if(btn){
-      btn.textContent = "Fixed Sent ✅";
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = "Mark Label Fixed ✅";
-      }, 2500);
-    }
-  }catch(e){
-    showToast("Fixed update failed");
-
-    if(btn){
-      btn.disabled = false;
-      btn.textContent = "Mark Label Fixed ✅";
-    }
-  }
-}
-
-function stylePreviewSlackButton(btn, bg){
-  btn.className = "btn-primary";
-  btn.style.width = "100%";
-  btn.style.marginTop = "8px";
-  btn.style.minHeight = "46px";
-  btn.style.borderRadius = "8px";
-  btn.style.background = bg;
-  btn.style.color = "white";
-  btn.style.fontSize = "18px";
-  btn.style.fontWeight = "900";
-}
-
 function ensureNotifyButton(label){
-  let notifyBtn = document.getElementById("notifyMissingLabelBtn");
+  let btn = document.getElementById("notifyMissingLabelBtn");
 
-  if(!notifyBtn){
-    notifyBtn = document.createElement("button");
-    notifyBtn.id = "notifyMissingLabelBtn";
-    notifyBtn.textContent = "Notify Missing Label 🔔";
-    stylePreviewSlackButton(notifyBtn, "#4472c4");
+  if(!btn){
+    btn = document.createElement("button");
+    btn.id = "notifyMissingLabelBtn";
+    btn.textContent = "Notify Missing Label 🔔";
+    btn.className = "btn-primary";
+    btn.style.width = "100%";
+    btn.style.marginTop = "8px";
+    btn.style.minHeight = "46px";
+    btn.style.borderRadius = "8px";
+    btn.style.background = "#4472c4";
+    btn.style.color = "white";
+    btn.style.fontSize = "18px";
+    btn.style.fontWeight = "900";
 
     const actions = document.querySelector(".preview-actions");
     const panel = document.querySelector(".preview-panel");
 
     if(actions){
-      actions.insertAdjacentElement("afterend", notifyBtn);
+      actions.insertAdjacentElement("afterend", btn);
     }else if(panel){
-      panel.appendChild(notifyBtn);
+      panel.appendChild(btn);
     }
   }
 
-  let fixedBtn = document.getElementById("markLabelFixedBtn");
-
-  if(!fixedBtn){
-    fixedBtn = document.createElement("button");
-    fixedBtn.id = "markLabelFixedBtn";
-    fixedBtn.textContent = "Mark Label Fixed ✅";
-    stylePreviewSlackButton(fixedBtn, "#2eb67d");
-
-    notifyBtn.insertAdjacentElement("afterend", fixedBtn);
-  }
-
-  notifyBtn.onclick = () => notifyMissingLabel(label);
-  fixedBtn.onclick = () => notifyLabelFixed(label);
+ btn.onclick = () => notifyMissingLabel(label);
 }
 
 function renderQuickHome(){
@@ -1925,7 +1785,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=29").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=31").catch(() => {});
 }
 </script>
 </body>
