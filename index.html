@@ -1045,7 +1045,7 @@ function saveSlackWebhookUrl(){
   }
 
   localStorage.setItem(SLACK_WEBHOOK_KEY, value);
-  showToast("Webhook/relay URL saved");
+  showToast("Slack Workflow URL saved");
 }
  let qrScanStream = null;
 let qrScanTimer = null;
@@ -1388,8 +1388,8 @@ function ensureSlackSetupUi(){
   const row = document.createElement("div");
   row.className = "setup-row";
   row.innerHTML = `
-    <label>Slack Webhook URL</label>
-    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack webhook URL">
+    <label>Slack Workflow Webhook URL</label>
+    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack Workflow webhook URL">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
       <button id="scanSlackWebhook" class="btn-grey">Scan QR Webhook</button>
       <button id="saveSlackWebhook" class="btn-primary">Save Webhook URL</button>
@@ -1461,6 +1461,9 @@ async function notifyMissingLabel(label){
 }
 
 function ensureNotifyButton(label){
+  const oldFixedBtn = document.getElementById("markLabelFixedBtn");
+  if(oldFixedBtn) oldFixedBtn.remove();
+
   let btn = document.getElementById("notifyMissingLabelBtn");
 
   if(!btn){
@@ -1785,7 +1788,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=31").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=32").catch(() => {});
 }
 </script>
 </body>
