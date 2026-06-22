@@ -1421,9 +1421,63 @@ async function notifyMissingLabel(label){
     return;
   }
 
-  const message =
-  `Hey Team 👋 Sort Zone Label for *"${label}"* is reported missing or damaged, ` +
-  `Please take action accordingly - Thank You :slightly_smiling_face: <!here>`;
+  const payload = {
+    text: `Sort Zone Label for "${label}" is reported missing or damaged`,
+    blocks: [
+      {
+        type: "header",
+        text: {
+          type: "plain_text",
+          text: label,
+          emoji: false
+        }
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `Hey Team :wave: Sort Zone Label for *"${label}"* is reported missing or damaged, Please take action accordingly - Thank You <!here>`
+        }
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Pending Fix!",
+              emoji: false
+            },
+            style: "danger",
+            action_id: "sort_zone_label_fixed",
+            value: label,
+            confirm: {
+              title: {
+                type: "plain_text",
+                text: "Confirm Fix",
+                emoji: false
+              },
+              text: {
+                type: "mrkdwn",
+                text: `Mark *${label}* as fixed?`
+              },
+              confirm: {
+                type: "plain_text",
+                text: "Fixed",
+                emoji: false
+              },
+              deny: {
+                type: "plain_text",
+                text: "Cancel",
+                emoji: false
+              }
+            }
+          }
+        ]
+      }
+    ]
+  };
 
   const btn = document.getElementById("notifyMissingLabelBtn");
 
@@ -1438,9 +1492,7 @@ async function notifyMissingLabel(label){
     await fetch(webhookUrl, {
       method: "POST",
       mode: "no-cors",
-      body: JSON.stringify({
-        text: message
-      })
+      body: JSON.stringify(payload)
     });
 
     showToast("Request sent for " + label + ". Check Slack.");
