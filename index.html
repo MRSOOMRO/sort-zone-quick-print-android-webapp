@@ -699,7 +699,7 @@ body {
 
 
 <script>
-const APP_VERSION = "v29";
+const APP_VERSION = "v33";
 const QR_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 const REPO_STEM_URL = "./stem/DCE1.csv";
 
@@ -1035,7 +1035,7 @@ function saveSlackWebhookUrl(){
 
   if(!value){
     localStorage.removeItem(SLACK_WEBHOOK_KEY);
-    showToast("Webhook/relay URL cleared");
+    showToast("Workflow URL cleared");
     return;
   }
 
@@ -1044,8 +1044,13 @@ function saveSlackWebhookUrl(){
     return;
   }
 
+  if(value.includes("/services/")){
+    showToast("This is old incoming webhook. Use Workflow trigger URL.");
+    return;
+  }
+
   localStorage.setItem(SLACK_WEBHOOK_KEY, value);
-  showToast("Slack Workflow URL saved");
+  showToast("Workflow URL saved");
 }
  let qrScanStream = null;
 let qrScanTimer = null;
@@ -1388,11 +1393,11 @@ function ensureSlackSetupUi(){
   const row = document.createElement("div");
   row.className = "setup-row";
   row.innerHTML = `
-    <label>Slack Workflow Webhook URL</label>
-    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack Workflow webhook URL">
+    <label>Slack Workflow URL</label>
+    <input id="slackWebhookUrl" type="password" placeholder="Paste Slack Workflow trigger URL">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
       <button id="scanSlackWebhook" class="btn-grey">Scan QR Webhook</button>
-      <button id="saveSlackWebhook" class="btn-primary">Save Webhook URL</button>
+      <button id="saveSlackWebhook" class="btn-primary">Save Workflow URL</button>
     </div>
   `;
 
@@ -1414,6 +1419,12 @@ async function notifyMissingLabel(label){
     return;
   }
 
+  if(webhookUrl.includes("/services/")){
+    showToast("Old Slack webhook found. Paste Workflow trigger URL in Setup.");
+    openSetup();
+    return;
+  }
+
   label = String(label || "").trim();
 
   if(!label){
@@ -1422,7 +1433,8 @@ async function notifyMissingLabel(label){
   }
 
   const payload = {
-    Label: label
+    Label: label,
+    label: label
   };
 
   const btn = document.getElementById("notifyMissingLabelBtn");
@@ -1461,9 +1473,6 @@ async function notifyMissingLabel(label){
 }
 
 function ensureNotifyButton(label){
-  const oldFixedBtn = document.getElementById("markLabelFixedBtn");
-  if(oldFixedBtn) oldFixedBtn.remove();
-
   let btn = document.getElementById("notifyMissingLabelBtn");
 
   if(!btn){
@@ -1788,7 +1797,7 @@ updateStatus();
 renderQuickHome();
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./service-worker.js?v=32").catch(() => {});
+  navigator.serviceWorker.register("./service-worker.js?v=33").catch(() => {});
 }
 </script>
 </body>
